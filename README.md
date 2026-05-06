@@ -207,14 +207,33 @@ Next messages  → frontend sends session_id back
 
 ---
 
-## 📦 Requirements
-fastapi
-uvicorn
-supabase
-langchain
-langchain-groq
-langchain-google-genai
-langchain-community
-fastembed
-python-dotenv
-pydantic
+# 📦 Requirements
+
+## Install Dependencies
+
+Run the following command to install all required packages:
+
+```bash
+pip install fastapi uvicorn supabase langchain langchain-groq langchain-google-genai langchain-community fastembed python-dotenv pydantic
+```
+
+## Core Technologies
+
+| Package | Purpose |
+|---|---|
+| fastapi | Backend API framework |
+| uvicorn | ASGI server for FastAPI |
+| supabase | Database and vector storage |
+| langchain | RAG orchestration framework |
+| langchain-groq | Groq LLM integration |
+| langchain-google-genai | Gemini integration |
+| langchain-community | Community LangChain utilities |
+| fastembed | Local embedding generation |
+| python-dotenv | Environment variable management |
+| pydantic | Data validation and schemas |
+
+## Recommended Python Version
+
+```bash
+Python 3.10+
+```
