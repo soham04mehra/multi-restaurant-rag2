@@ -12,4 +12,3 @@ def insert_dish(row_data: dict):
 def delete_all_dishes(restaurant_id: str):
     """Deletes all dishes for a specific restaurant to allow clean re-ingestion."""
     return supabase.table("menu_items").delete().eq("restaurant_id", restaurant_id).execute()
-
