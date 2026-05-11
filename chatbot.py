@@ -1,31 +1,18 @@
 # REMINDER: .env file has secret keys. NEVER upload it to GitHub.
-
-# os is used to read environment variables
 import os
-# load_dotenv is used to load variables from the .env file
 from dotenv import load_dotenv
-# ChatGroq connects to the Groq API to use fast open-source LLMs
-from langchain_groq import ChatGroq
-# ChatGoogleGenerativeAI connects to the Google Gemini API
 # pyrefly: ignore [missing-import]
 from langchain_google_genai import ChatGoogleGenerativeAI
-# ChatMessageHistory stores the history of a single conversation
 from langchain_community.chat_message_histories import ChatMessageHistory
-# BaseChatMessageHistory is the base class type for chat histories
 from langchain_core.chat_history import BaseChatMessageHistory
-# ChatPromptTemplate and MessagesPlaceholder help us build the instructions for the AI
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-# RunnableWithMessageHistory wraps our chain to handle history automatically
 from langchain_core.runnables.history import RunnableWithMessageHistory
-
 import config
 from embeddings import load_embedding_model
 from database import supabase
 
-# ==========================================
+
 # STEP 1: LOAD ENVIRONMENT VARIABLES
-# ==========================================
-# STEP 1: Load all secret keys from .env file
 
 load_dotenv()
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
@@ -36,21 +23,13 @@ SUPABASE_KEY = config.SUPABASE_KEY
 if not GOOGLE_API_KEY:
     raise ValueError("Error: GOOGLE_API_KEY is missing from environment")
 
-# ==========================================
+
 # STEP 2: INITIALIZE EVERYTHING ONCE
-# ==========================================
-# STEP 2: Start all models and connections one time only
-# We do this outside functions so they are not restarted
-# on every single customer request which would be very slow
 
 embedding_model = load_embedding_model()
-
-# This is the AI brain that reads the menu context
-# and generates a natural human-like answer for the customer
 # Using Gemini 2.0 Flash: fast, high rate limits, great for multi-restaurant RAG
 llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash", google_api_key=GOOGLE_API_KEY)
-# Fallback: switch back to Groq by uncommenting the line below and commenting out the Gemini line above
-# llm = ChatGroq(groq_api_key=GROQ_API_KEY, model_name="llama-3.1-8b-instant", n=1)
+
 
 # This dictionary holds chat history for every session
 # Key is session_id, value is that session's ChatMessageHistory object
@@ -155,9 +134,8 @@ def search_menu(query: str, restaurant_id: str) -> list:
     print(f"Found {len(response.data)} dishes after filtering")
     return response.data
 
-# ==========================================
+
 # STEP 5: get_session_history() FUNCTION
-# ==========================================
 # This function manages chat history for each customer session.
 
 def get_session_history(session_id: str) -> BaseChatMessageHistory:
@@ -165,9 +143,7 @@ def get_session_history(session_id: str) -> BaseChatMessageHistory:
         store[session_id] = ChatMessageHistory()
     return store[session_id]
 
-# ==========================================
 # STEP 6: BUILD THE PROMPTS
-# ==========================================
 
 contextualize_q_system_prompt = """
 You are a question reformulation assistant for a restaurant chatbot.
@@ -215,9 +191,8 @@ qa_prompt = ChatPromptTemplate.from_messages([
     ("human", "{input}"),
 ])
 
-# ==========================================
+
 # STEP 7: get_answer() FUNCTION
-# ==========================================
 def get_answer(query: str, session_id: str, restaurant_id: str) -> dict:
 
     try:
@@ -226,8 +201,22 @@ def get_answer(query: str, session_id: str, restaurant_id: str) -> dict:
         # Get existing chat history for this session
         session_history = get_session_history(session_id)
 
-        # Search Supabase with full parameter control
-        dishes = search_menu(query, restaurant_id)
+        # --- NEW: Contextualize the question ---
+        # If there is history, rewrite the question to be standalone
+        # Example: "How much is it?" -> "How much is the Chicken Doner?"
+        search_query = query
+        if session_history.messages:
+            contextualize_messages = contextualize_q_prompt.format_messages(
+                chat_history=session_history.messages,
+                input=query
+            )
+            # Use LLM to rewrite the query
+            context_response = llm.invoke(contextualize_messages)
+            search_query = context_response.content
+            print(f"Contextualized Query: {search_query}")
+
+        # Search Supabase using the contextualized query
+        dishes = search_menu(search_query, restaurant_id)
 
         # If no dishes found return polite message immediately
         if not dishes:
@@ -241,10 +230,7 @@ def get_answer(query: str, session_id: str, restaurant_id: str) -> dict:
 
         # Format dishes into readable text block for the LLM
         # Build menu context directly from content field of each dish
-        # content was built during ingestion with all dish information included
-        # This is simpler and avoids rebuilding what is already stored
-        # Each dish content is separated by --- so LLM can clearly see
-        # where one dish ends and the next begins
+        
         menu_context = "\n---\n".join([
             dish.get('content', '')
             for dish in dishes
