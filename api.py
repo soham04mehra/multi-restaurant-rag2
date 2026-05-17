@@ -4,7 +4,7 @@ from pydantic import BaseModel
 from typing import Optional
 from uuid import uuid4
 from chatbot import get_answer
-from database import supabase
+from database import get_supabase
 
 # STEP 1: Create the FastAPI app instance
 # This is the main application object everything connects to
@@ -76,6 +76,7 @@ async def get_menu(restaurant_id: str):
     try:
         print(f"Fetching full menu for restaurant: {restaurant_id}")
         
+        supabase = await get_supabase()
         response = await supabase.table("menu_items").select(
             "name, description, price, cuisine, is_veg, "
             "spice_level, allergens, ingredients"
