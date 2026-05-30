@@ -141,7 +141,7 @@
   {
     "restaurant_id": 1,
     "name": "French Fries",
-    "description": "Classic salted french fries.",
+    "description": "Classic salted french fries. Confirmed free from dairy, soy, gluten, nuts, tree_nuts, eggs, shellfish, and meat.",
     "price": 164.0,
     "cuisine": "Fast Food",
     "is_veg": true,
@@ -155,7 +155,7 @@
   {
     "restaurant_id": 1,
     "name": "Chicken Popcorn",
-    "description": "Bite-sized fried chicken pieces.",
+    "description": "Bite-sized fried chicken pieces. Confirmed free from dairy, soy, gluten, nuts, tree_nuts, eggs, and shellfish.",
     "price": 249.0,
     "cuisine": "General",
     "is_veg": false,
@@ -171,7 +171,7 @@
   {
     "restaurant_id": 1,
     "name": "Walnut Brownie",
-    "description": "Gooey chocolate brownie with melted dark chocolate and walnuts.",
+    "description": "Gooey chocolate brownie with melted dark chocolate and walnuts. Confirmed free from dairy, soy, gluten, eggs, and shellfish.",
     "price": 142.0,
     "cuisine": "Dessert",
     "is_veg": true,

@@ -11,3 +11,4 @@ ragas
 datasets
 pandas
 numpy
+redis

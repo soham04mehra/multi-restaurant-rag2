@@ -12,6 +12,7 @@ from ragas.llms import LangchainLLMWrapper
 from ragas.embeddings.base import BaseRagasEmbeddings
 from ragas.metrics import Faithfulness, AnswerRelevancy, ContextRecall
 # pyright: ignore [reportMissingImports]
+from langchain_groq import ChatGroq
 from langchain_google_genai import ChatGoogleGenerativeAI
 # 1. Import your chatbot logic
 import chatbot
@@ -23,8 +24,10 @@ load_dotenv()
 # ==========================================
 # STEP 1: SETUP THE EVALUATION MODELS
 # ==========================================
-# Using Gemini 2.0 Flash for both Chatbot and Evaluation
-eval_llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash")
+# Using Llama 3.3 70B with Gemini 2.5 Flash as fallback for Evaluation
+primary_eval_llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0.0)
+fallback_eval_llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=os.getenv("GOOGLE_API_KEY"), temperature=0.0)
+eval_llm = primary_eval_llm.with_fallbacks([fallback_eval_llm])
 
 ragas_llm = LangchainLLMWrapper(eval_llm)
 
