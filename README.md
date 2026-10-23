@@ -53,7 +53,8 @@ Customer Query
 │     • Ensures best contextual dishes reach the LLM       │
 │                                                          │
 │  5. LLM Response Generation                              │
-│     • Gemini 2.0 Flash generates natural responses       │
+│     • Groq (Llama 3.3 70B) generates responses           │
+│     • Gemini 2.5 Flash as high-availability fallback     │
 │     • Answers grounded ONLY in retrieved menu items      │
 │     • Prevents hallucinated dishes or pricing            │
 │     • Supports conversational follow-up questions        │
@@ -140,7 +141,7 @@ RAG applications are I/O bound. Async processing allows the ASGI server (Uvicorn
 |---|---|---|
 | API | FastAPI | Fast, async, auto Swagger docs |
 | ASGI Server | Uvicorn | Lightweight production-ready server |
-| LLM | Gemini 2.0 Flash | Strong instruction following, Hinglish support, generous free tier |
+| LLM | Groq (Llama 3.3 70B) + Gemini 2.5 Flash | High-speed primary generation (Groq) with automatic fallback (Gemini) |
 | Embeddings | FastEmbed `BAAI/bge-small-en-v1.5` | Better semantic retrieval than MiniLM, CPU friendly, free |
 | Vector Database | Supabase pgvector | Managed Postgres with vector search built in |
 | Cache & Memory | Redis | Sub-millisecond response caching & persistent session memory |
@@ -157,10 +158,10 @@ RAG applications are I/O bound. Async processing allows the ASGI server (Uvicorn
 - 🔍 **Semantic search** — finds dishes by meaning, not keyword matching
 - 🥗 **Veg / Non-veg filtering** — enforced at database level before LLM sees results
 - 💰 **Price filtering** — supports queries like *"under 300 rupees"* or *"above 200"*
-- 🚫 **Allergen safety** — detects allergen mentions and excludes unsafe dishes automatically
+- 🚫 **Allergen filtering** — detects allergen mentions and keeps answers constrained to retrieved menu items
 - 🧠 **Conversation memory** — remembers context within a session for natural follow-up questions
 - 💬 **Follow-up aware conversations** — understands references like *"something cheaper"*, *"make it veg"*, or *"spicier than before"*
-- 🚫 **Hallucination resistant** — responses are grounded only in retrieved menu data
+- 🎯 **Menu Grounded** — answers constrained to retrieved menu items
 - 🛡️ **Prompt injection protected** — ignores malicious attempts to override system instructions
 - 🏪 **Multi-tenant** — one backend serves multiple restaurants with fully isolated menus
 - 🌶️ **Spice-aware** — re-ranks results by spice level when customer asks for spicy food
@@ -228,7 +229,7 @@ metadata filtering at DB level
    ↓
 spice-aware reranking
    ↓
-pass top dishes to Gemini
+pass top dishes to LLM (Groq / Gemini)
    ↓
 LLM generates grounded answer
    ↓
@@ -283,9 +284,12 @@ pip install -r requirements.txt
 Create a `.env` file:
 
 ```env
-GOOGLE_API_KEY=your_gemini_key
+GROQ_API_KEY=your_groq_api_key
+GOOGLE_API_KEY=your_gemini_api_key
 SUPABASE_URL=your_supabase_url
 SUPABASE_KEY=your_supabase_key
+REDIS_HOST=localhost
+REDIS_PORT=6379
 ```
 
 ## 3. Setup Database
@@ -431,7 +435,7 @@ Evaluation helps test:
 - Faithfulness to retrieved data
 - Answer correctness
 - Retrieval quality
-- Hallucination resistance
+- Adherence to retrieved menu constraints
 
 This ensures the chatbot is not only functional, but also measurable and reliable.
 
@@ -447,7 +451,7 @@ This ensures the chatbot is not only functional, but also measurable and reliabl
 - Metadata filtering happens before LLM generation
 - Allergens can be excluded automatically
 - Restaurant data is isolated using restaurant_id filtering
-- No hallucinated dishes or fake prices returned
+- Answers constrained to retrieved menu items and verified pricing
 - Responses remain grounded in actual database records
 
 ---
@@ -456,9 +460,9 @@ This ensures the chatbot is not only functional, but also measurable and reliabl
 
 - Never commit your `.env` file — it contains secret keys
 - Re-run `ingest.py` every time menu or aliases are updated
-- Session history is stored in memory — resets on server restart
-- Supabase free tier + Gemini free tier covers early growth comfortably
-- Use production-grade session storage like Redis for deployment
+- Session history is managed via Redis with sliding TTL and in-memory fallback
+- Supabase free tier + Groq/Gemini free tiers cover early growth comfortably
+- Ensure Redis is running for persistent session storage
 - Add authentication before deploying publicly
 
 ---
@@ -501,7 +505,6 @@ Python 3.10+
 
 # 📈 Future Improvements
 
-- Redis-based persistent session memory
 - Hybrid search (BM25 + Vector Search)
 - Admin dashboard for menu management
 - Real-time analytics for popular dishes
@@ -540,3 +543,10 @@ This project demonstrates a production-style RAG architecture tailored specifica
 Instead of relying on generic chatbot responses, the system retrieves real menu data, applies metadata-aware filtering, and generates grounded conversational answers.
 
 The result is a safer, more accurate, and scalable restaurant AI assistant.
+
+
+---
+
+## 💻 Frontend & Interface
+
+The frontend client and UI card components are developed by my friend/collaborator, while this repository maintains the core backend RAG pipeline, multi-tenant vector retrieval, session memory, and LLM orchestration.
